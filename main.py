@@ -12,36 +12,49 @@ from database_access import fetch_db
 import streamlit_authenticator as stauth
 
 
-st.set_page_config(initial_sidebar_state="collapsed",
+
+st.set_page_config(initial_sidebar_state="expanded",
                    layout="wide",
-                   page_title="Scores Board",
-                   page_icon="💯")
+                   page_title="Access Login",
+                   page_icon="🔑")
+
+
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
+st.sidebar.image("https://www.imda.gov.sg/-/media/Imda/Images/Content/For-Community/Digital-for-Life/DfL-Logo-Banner.jpg?w=100%25&hash=29681AC02C27884AC9CC14F6BED37651")
 
 # ___ USER AUTHENTICATION
 names = ["Peter Phuah", "Steven Chow"]
 usernames = ["peterphuah", "stevenchow"]
 
 
-# Load hashed passwords
+# ___ Load hashed passwords
 file_path = Path(__file__).parent / "hashed_pw.pkl"
 with file_path.open("rb") as file:
     hashed_passwords = pickle.load(file)
-
 credentials = {"usernames": {}}
-
 for uname, name, pwd in zip(usernames, names, hashed_passwords):
     user_dict = {"name": name, "password": pwd}
     credentials["usernames"].update({uname: user_dict})
 
 authenticator = stauth.Authenticate(credentials, "masteraccess_cookie", "random_key", cookie_expiry_days=1)
 
-name, authentication_status, username = authenticator.login("login", "main")
+name, authentication_status, username = authenticator.login("🔑 Access Login", "sidebar")
 
 if authentication_status == False:
-    st.error("Username/password is incorrect")
+    st.image("https://github.com/SteveDataAnalyst/SDO/raw/main/Capture1.JPG")
+    lottie_hello = load_lottieurl("https://assets8.lottiefiles.com/private_files/lf30_BfKkV9.json")
+    st_lottie(lottie_hello, key="hello", width=500)
+    st.sidebar.error("Username/password is incorrect")
 
 if authentication_status == None:
-    st.warning("Please enter your username and password")
+    st.image("https://github.com/SteveDataAnalyst/SDO/raw/main/Capture1.JPG")
+    lottie_hello = load_lottieurl("https://assets8.lottiefiles.com/private_files/lf30_BfKkV9.json")
+    st_lottie(lottie_hello, key="hello", width=500)
+    st.sidebar.header("Please enter your username and password")
 
 if authentication_status:
 
@@ -95,12 +108,14 @@ if authentication_status:
         lottie_hello = load_lottieurl("https://assets2.lottiefiles.com/packages/lf20_cx6nva8c.json")
         st_lottie(lottie_hello, key="hello", width=200)
 
+    def animation_position():
+        lottie_hello = load_lottieurl("https://assets9.lottiefiles.com/private_files/lf30_W3J9n9.json")
+        st_lottie(lottie_hello, key="first", width=700)
 
     def date_select():
-        uniquedates_list = list(df['date'].unique())
         box_selection = st.selectbox(
             "📅 Select a Date",
-            uniquedates_list
+            list(df['date'].unique())
         )
         return box_selection
 
@@ -126,6 +141,26 @@ if authentication_status:
         return df_sorted_desc
 
 
+    def split_time(date):
+        time_df = df.loc[df['date'] == date]
+        max_results = time_df['result'].max()
+        max_results_df = time_df.loc[time_df['result']==max_results]
+        time_sorted_desc_df = max_results_df.sort_values('time', ascending=True)
+        animation_position()
+        column1, column2, column3 = st.columns(3)
+        with column1:
+            st.subheader(f"🥇First Place: {time_sorted_desc_df['name'].iloc[0]}")
+            st.write(f"Scores: {time_sorted_desc_df['result'].iloc[0]}")
+            st.write(f"Time taken: {time_sorted_desc_df['time'].iloc[0]} Seconds")
+        with column2:
+            st.subheader(f"🥈Second Place: {time_sorted_desc_df['name'].iloc[1]}")
+            st.write(f"Scores: {time_sorted_desc_df['result'].iloc[1]}")
+            st.write(f"Time taken: {time_sorted_desc_df['time'].iloc[1]} Seconds")
+        with column3:
+            st.subheader(f"🥉Third Place: {time_sorted_desc_df['name'].iloc[2]}")
+            st.write(f"Scores: {time_sorted_desc_df['result'].iloc[2]}")
+            st.write(f"Time taken: {time_sorted_desc_df['time'].iloc[2]} Seconds")
+
     def graph(df):
         figure1= plt.figure(figsize=(7, 4))
         sns.barplot(data=df, y='result', x='name')
@@ -136,35 +171,38 @@ if authentication_status:
         st.pyplot(figure1)
 
 
-    def calculate_correct_scam(date):
-        cal_df = df.loc[df['date'] == date]
-        total_cal_right = 0
-        total_cal_wrong = 0
-        for num in range(1, 8):
-            cal_string = f'Q{num}_ans'
-            cal_right = cal_df[cal_df[cal_string] == "Right"].shape[0]
-            cal_wrong = cal_df[cal_df[cal_string] == "Wrong"].shape[0]
-            total_cal_right += cal_right
-            total_cal_wrong += cal_wrong
-        total = total_cal_right + total_cal_wrong
-        return round((total_cal_right/total) * 100, 2)
 
-
-    def calculate_correct_general(date):
-        cal_df = df.loc[df['date'] == date]
-        total_cal_right = 0
-        total_cal_wrong = 0
-        for num in range(8, 11):
-            cal_string = f'Q{num}_ans'
-            cal_right = cal_df[cal_df[cal_string] == "Right"].shape[0]
-            cal_wrong = cal_df[cal_df[cal_string] == "Wrong"].shape[0]
-            total_cal_right += cal_right
-            total_cal_wrong += cal_wrong
-        total = total_cal_right + total_cal_wrong
-        return round((total_cal_right/total) * 100, 2)
+    # def calculate_correct_scam(date):
+    #     cal_df = df.loc[df['date'] == date]
+    #     answer = cal_df["answer"].iloc[0]
+    #     total_cal_right = 0
+    #     total_cal_wrong = 0
+    #     for num in range(1, 8):
+    #         cal_string = f'Q{num}_ans'
+    #         cal_right = cal_df[cal_df[cal_string] == "Right"].shape[0]
+    #         cal_wrong = cal_df[cal_df[cal_string] == "Wrong"].shape[0]
+    #         total_cal_right += cal_right
+    #         total_cal_wrong += cal_wrong
+    #     total = total_cal_right + total_cal_wrong
+    #     return round((total_cal_right/total) * 100, 2)
+    #
+    #
+    # def calculate_correct_general(date):
+    #     cal_df = df.loc[df['date'] == date]
+    #     total_cal_right = 0
+    #     total_cal_wrong = 0
+    #     for num in range(8, 11):
+    #         cal_string = f'Q{num}_ans'
+    #         cal_right = cal_df[cal_df[cal_string] == "Right"].shape[0]
+    #         cal_wrong = cal_df[cal_df[cal_string] == "Wrong"].shape[0]
+    #         total_cal_right += cal_right
+    #         total_cal_wrong += cal_wrong
+    #     total = total_cal_right + total_cal_wrong
+    #     return round((total_cal_right/total) * 100, 2)
 
 
     def main_function_run():
+
         head1, head2 = st.columns(2)
         with head1:
             st.info(
@@ -191,20 +229,10 @@ if authentication_status:
                         label = "Average Total Score%",
                         value = f"{avg} %",
                     )
-                with three:
-                    scam_correct = calculate_correct_scam(chosen_date)
-                    three.metric(
-                        label = "Average Scam Score%",
-                        value = f"{scam_correct} %",
-                    )
-                with four:
-                    general_correct = calculate_correct_general(chosen_date)
-                    four.metric(
-                        label = "Average General Score%",
-                        value = f"{general_correct} %",
-                    )
+
                 plot_df = plot(chosen_date)
                 graph(plot_df)
+                split_time(chosen_date)
 
 
 
